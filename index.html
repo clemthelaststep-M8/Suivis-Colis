@@ -129,6 +129,25 @@
 
   .btn-accent:hover { background: #4a3f28; }
 
+  .btn-sm { flex: none; padding: 8px 12px; font-size: 13px; }
+
+  .header-actions { display: flex; gap: 8px; align-items: center; }
+
+  .response-card { margin-bottom: 14px; }
+  .response-card:last-child { margin-bottom: 0; }
+  .response-title { font-size: 13px; font-weight: 500; color: var(--accent); margin-bottom: 8px; }
+  .response-text {
+    background: var(--surface2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    font-size: 12px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+
   .filters { display: flex; gap: 6px; margin-bottom: 16px; }
 
   .filter {
@@ -285,7 +304,10 @@
       <div class="logo">mes<span>colis</span></div>
       <div class="header-sub" id="lastSync">Jamais synchronisé</div>
     </div>
-    <button class="settings-btn" onclick="openSettings()" title="Paramètres">⚙</button>
+    <div class="header-actions">
+      <button class="btn btn-sm" onclick="openResponses()" title="Réponses clients">💬 Réponses clients</button>
+      <button class="settings-btn" onclick="openSettings()" title="Paramètres">⚙</button>
+    </div>
   </header>
 
   <div class="stats-grid" id="stats">
@@ -333,6 +355,16 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="responsesModal">
+  <div class="modal" style="max-height:85vh;overflow-y:auto;">
+    <div class="modal-title">Réponses clients</div>
+    <div id="responsesList"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeResponses()">Fermer</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const PARCEL_KEY_DEFAULT = '_4x6EDvvdASRihHJIXZVFWoDIfwibYHLH3KHRWzpfD1k4zMH8XJpgx8BvgwmmSHS7mP2PjINZsC';
 
@@ -356,6 +388,67 @@ function saveSettings() {
   closeSettings();
   loadDeliveries();
 }
+
+const RESPONSES = [
+  {
+    title: 'Colis perdu par Vinted',
+    text: `Bonjour [Prénom],
+
+Je suis vraiment désolé(e) pour ce contretemps. Après vérification du suivi, votre colis a visiblement été égaré par le transporteur pendant son acheminement. 😔
+
+Pas d'inquiétude : dans ce cas, Vinted prend entièrement le litige en charge. Ouvrez simplement un signalement depuis la commande (« Je rencontre un problème » → « Je n'ai pas reçu mon colis ») et Vinted procédera au remboursement complet sous quelques jours.
+
+Je reste bien sûr disponible pour vous accompagner dans la démarche. Encore toutes mes excuses, et merci pour votre compréhension ! 🙏`
+  },
+  {
+    title: 'Article introuvable (+ réduction)',
+    text: `Bonjour [Prénom],
+
+Je tenais à vous prévenir au plus vite : en préparant votre commande, je me suis rendu compte que l'article est malheureusement introuvable / n'est plus disponible. J'en suis sincèrement navré(e). 😔
+
+Je procède dès maintenant à l'annulation pour que vous soyez intégralement remboursé(e) par Vinted (c'est automatique, aucune démarche de votre part).
+
+Pour me faire pardonner, je vous offre -[XX] % sur tout mon dressing 🎁. J'ai d'autres pièces qui pourraient vous plaire par ici : [lien du profil]. Écrivez-moi et je vous applique la remise avec plaisir. À très vite j'espère ! 😊`
+  }
+];
+
+function openResponses() {
+  const container = document.getElementById('responsesList');
+  container.innerHTML = RESPONSES.map((r, i) => `
+    <div class="response-card">
+      <div class="response-title"></div>
+      <div class="response-text" id="respText${i}"></div>
+      <button class="btn" onclick="copyResponse(${i}, this)">Copier</button>
+    </div>`).join('');
+  RESPONSES.forEach((r, i) => {
+    container.querySelectorAll('.response-title')[i].textContent = r.title;
+    document.getElementById('respText' + i).textContent = r.text;
+  });
+  document.getElementById('responsesModal').classList.add('open');
+}
+
+function closeResponses() { document.getElementById('responsesModal').classList.remove('open'); }
+
+async function copyResponse(i, btn) {
+  try {
+    await navigator.clipboard.writeText(RESPONSES[i].text);
+    btn.textContent = 'Copié ✓';
+    btn.classList.add('btn-accent');
+  } catch(e) {
+    btn.textContent = 'Erreur de copie';
+  }
+  setTimeout(() => { btn.textContent = 'Copier'; btn.classList.remove('btn-accent'); }, 1500);
+}
+
+document.getElementById('responsesModal').addEventListener('click', e => {
+  if (e.target.id === 'responsesModal') closeResponses();
+});
+document.getElementById('settingsModal').addEventListener('click', e => {
+  if (e.target.id === 'settingsModal') closeSettings();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeResponses(); closeSettings(); }
+});
 
 const statusInfo = {
   0:{label:'En transit',bg:'var(--info-dim)',tx:'var(--info)'},
